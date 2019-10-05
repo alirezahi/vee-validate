@@ -2,6 +2,7 @@ import { isCallable, merge, interpolate } from './utils';
 import { ValidationMessageTemplate } from './types';
 import { extend, RuleContainer } from './extend';
 import { getConfig } from './config';
+import { localeChanged } from './localeChanged';
 
 interface PartialI18nDictionary {
   name?: string;
@@ -124,6 +125,7 @@ function localize(locale: string | RootI18nDictionary, dictionary?: PartialI18nD
     }
 
     updateRules();
+    localeChanged();
     return;
   }
 

@@ -4,6 +4,7 @@ export { install } from './install';
 export { configure } from './config';
 export { setInteractionMode } from './modes';
 export { localize } from './localize';
+export { localeChanged } from './localeChanged';
 export { ValidationProvider, ValidationObserver, withValidation } from './components';
 
 const version = '__VERSION__';

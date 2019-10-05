@@ -794,7 +794,7 @@ test('validates manually with a initial value using the validate event handler o
             <input type="text" :value="myValue" @input="validate">
             <p id="error">{{ errors[0] }}</p>
           </ValidationProvider>
-        </ValidationObserver> 
+        </ValidationObserver>
       `
     },
     { localVue: Vue, sync: false }
@@ -819,7 +819,7 @@ test('validates manually with a initial value using the validate event handler o
             <ModelComp :value="myValue" @input="validate" />
             <p id="error">{{ errors[0] }}</p>
           </ValidationProvider>
-        </ValidationObserver> 
+        </ValidationObserver>
       `
     },
     { localVue: Vue, sync: false }

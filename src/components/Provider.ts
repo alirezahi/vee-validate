@@ -1,6 +1,7 @@
 import { getConfig } from '../config';
 import { validate } from '../validate';
 import { RuleContainer } from '../extend';
+import { EVENT_BUS } from '../localeChanged';
 import { normalizeEventValue } from '../utils/events';
 import { createFlags, normalizeRules, isCallable, isEqual, computeClassObj } from '../utils';
 import { extractVNodes, resolveRules, normalizeChildren } from '../utils/vnode';
@@ -24,6 +25,7 @@ type withProviderPrivates = VueConstructor<
     $veeOnInput?: Function;
     $veeOnBlur?: Function;
     $vnode: VNodeWithVeeContext;
+    $localeHandler: Function;
   }
 >;
 
@@ -165,6 +167,15 @@ export const ValidationProvider = (Vue as withProviderPrivates).extend({
       return normalizeRules(this.rules);
     }
   },
+  created() {
+    this.$localeHandler = () => {
+      if (this.messages.length) {
+        return this.validate();
+      }
+    };
+
+    EVENT_BUS.$on('change:locale', this.$localeHandler);
+  },
   render(h: CreateElement): VNode {
     this.registerField();
     const ctx = createValidationCtx(this);
@@ -181,6 +192,7 @@ export const ValidationProvider = (Vue as withProviderPrivates).extend({
   beforeDestroy() {
     // cleanup reference.
     this.$_veeObserver.unsubscribe(this.id);
+    EVENT_BUS.$off('change:locale', this.$localeHandler);
   },
   activated() {
     this.$_veeObserver.subscribe(this);
