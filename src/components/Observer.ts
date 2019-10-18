@@ -38,6 +38,7 @@ function data() {
 
   return {
     id: '',
+    cacheBuster: false,
     refs,
     observers,
     inactiveRefs
@@ -53,6 +54,7 @@ type withObserverNode = VueConstructor<
     sources: any[];
     errors: ObserverErrors;
     flags: ValidationFlags;
+    $ctxCache: any;
   }
 >;
 
@@ -122,7 +124,13 @@ export const ValidationObserver = (Vue as withObserverNode).extend({
       }, {});
     },
     ctx() {
-      return {
+      if (this.$ctxCache) {
+        this.cacheBuster;
+
+        return this.$ctxCache;
+      }
+
+      const ctx = {
         errors: this.errors,
         ...this.flags,
         passes: (cb: Function) => {
@@ -137,6 +145,14 @@ export const ValidationObserver = (Vue as withObserverNode).extend({
         validate: (...args: any[]) => this.validate(...args),
         reset: () => this.reset()
       };
+
+      this.$ctxCache = ctx;
+      setTimeout(() => {
+        delete this.$ctxCache;
+        this.cacheBuster = !this.cacheBuster;
+      }, 100);
+
+      return ctx;
     }
   },
   created() {
