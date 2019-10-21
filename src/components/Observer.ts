@@ -1,5 +1,5 @@
 import Vue, { CreateElement, VNode, VueConstructor } from 'vue';
-import { values, findIndex, warn } from '../utils';
+import { values, findIndex, warn, createFlags } from '../utils';
 import { ValidationResult, InactiveRefCache, VeeObserver, VNodeWithVeeContext, ValidationFlags } from '../types';
 import { ValidationProvider } from './Provider';
 import { normalizeChildren } from '../utils/vnode';
@@ -52,8 +52,6 @@ type withObserverNode = VueConstructor<
     $_veeObserver: VeeObserver;
     $vnode: VNodeWithVeeContext;
     sources: any[];
-    errors: ObserverErrors;
-    flags: ValidationFlags;
     $ctxCache: any;
   }
 >;
@@ -99,18 +97,22 @@ export const ValidationObserver = (Vue as withObserverNode).extend({
   },
   data,
   computed: {
-    sources() {
-      return [...values(this.refs), ...values(this.inactiveRefs), ...this.observers];
-    },
-    errors() {
-      return this.sources.reduce((errors: Record<string, string[]>, vm: any) => {
-        errors[vm.id] = vm.errors;
+    ctx() {
+      if (this.$ctxCache) {
+        this.cacheBuster;
 
-        return errors;
-      }, {});
-    },
-    flags() {
-      return this.sources.reduce((flags: Record<string, boolean>, vm: any) => {
+        return this.$ctxCache;
+      }
+
+      const errors: Record<string, string[]> = {};
+      const flags = createFlags();
+
+      // we want this to be fast as possible, use classic for loops.
+      const vms = [...values(this.refs), ...values(this.inactiveRefs), ...this.observers];
+      const length = vms.length;
+      for (let i = 0; i < length; i++) {
+        const vm = vms[i];
+        errors[vm.id] = vm.errors;
         Object.keys(flagMergingStrategy).forEach(flag => {
           if (!(flag in flags)) {
             flags[flag] = vm.flags[flag];
@@ -119,20 +121,11 @@ export const ValidationObserver = (Vue as withObserverNode).extend({
 
           flags[flag] = mergeFlags(flags[flag], vm.flags[flag], flag);
         });
-
-        return flags;
-      }, {});
-    },
-    ctx() {
-      if (this.$ctxCache) {
-        this.cacheBuster;
-
-        return this.$ctxCache;
       }
 
       const ctx = {
-        errors: this.errors,
-        ...this.flags,
+        errors,
+        ...flags,
         passes: (cb: Function) => {
           return this.validate().then((result: boolean) => {
             if (!result || !cb) {
@@ -147,12 +140,21 @@ export const ValidationObserver = (Vue as withObserverNode).extend({
       };
 
       this.$ctxCache = ctx;
-      setTimeout(() => {
-        delete this.$ctxCache;
-        this.cacheBuster = !this.cacheBuster;
-      }, 100);
+      new Promise(resolve => {
+        setTimeout(() => {
+          delete this.$ctxCache;
+          this.cacheBuster = !this.cacheBuster;
+          resolve();
+        }, 100);
+      });
 
       return ctx;
+    },
+    errors() {
+      return (this as any).ctx.errors;
+    },
+    flags() {
+      return (this as any).ctx.flags;
     }
   },
   created() {
