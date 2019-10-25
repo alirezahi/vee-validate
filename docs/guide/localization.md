@@ -187,7 +187,7 @@ const i18n = new VueI18n({
 extend('required', {
   ...required,
   // the values param is the placeholders values
-  message: (_, values) => i18n.$t('validations.required', values)
+  message: (_, values) => i18n.t('validations.required', values)
 });
 ```
 
